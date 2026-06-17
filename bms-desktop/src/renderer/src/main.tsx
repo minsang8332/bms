@@ -1,0 +1,14 @@
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import '@fontsource/pretendard/400.css'
+import '@fontsource/pretendard/500.css'
+import '@fontsource/pretendard/600.css'
+import '@fontsource/pretendard/700.css'
+import App from './App'
+import './styles.css'
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+)
