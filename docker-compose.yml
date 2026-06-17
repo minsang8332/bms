@@ -1,0 +1,54 @@
+services:
+  bms-db:
+    build:
+      context: ./bms-db
+    container_name: bms-db
+    env_file:
+      - .env.db
+    volumes:
+      - bms-db-data:/var/lib/mysql
+    networks:
+      - bms-network
+    restart: always
+
+  bms-api:
+    build:
+      context: ./bms-api
+    container_name: bms-api
+    env_file:
+      - .env.db
+    environment:
+      - DB_HOST=bms-db
+      - DB_PORT=3306
+    depends_on:
+      - bms-db
+    networks:
+      - bms-network
+    restart: always
+
+  bms-proxy:
+    build:
+      context: ./bms-proxy
+    container_name: bms-proxy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - bms-proxy-certs:/etc/nginx/ssl
+      - bms-proxy-acme:/var/www/html
+      - bms-proxy-getssl:/root/.getssl
+    depends_on:
+      - bms-api
+    networks:
+      - bms-network
+    restart: always
+
+volumes:
+  bms-db-data:
+  bms-proxy-certs:
+  bms-proxy-acme:
+  bms-proxy-getssl:
+
+networks:
+  bms-network:
+    driver: bridge
