@@ -280,7 +280,8 @@ function ServiceCenterPage({ title = 'CS 관리', subLabel }: ServiceCenterPageP
   const submitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (!form.name.trim() || !form.contact.trim()) {
+    const cleanName = form.name.replace(/\s+/g, '')
+    if (!cleanName || !form.contact.trim()) {
       showAlert('지점명과 연락처는 필수 입력 항목입니다.', 'error')
       return
     }
@@ -321,7 +322,7 @@ function ServiceCenterPage({ title = 'CS 관리', subLabel }: ServiceCenterPageP
       if (editingServiceCenter) {
         await window.api.serviceCenter.edit({
           id: editingServiceCenter.id,
-          name: form.name,
+          name: cleanName,
           address: form.address,
           contact: form.contact.replace(/\D/g, ''),
           status: form.status,
@@ -335,7 +336,7 @@ function ServiceCenterPage({ title = 'CS 관리', subLabel }: ServiceCenterPageP
         showAlert('지점 정보가 수정되었습니다.', 'success')
       } else {
         await window.api.serviceCenter.create({
-          name: form.name,
+          name: cleanName,
           address: form.address,
           contact: form.contact.replace(/\D/g, ''),
           status: form.status,
@@ -346,22 +347,6 @@ function ServiceCenterPage({ title = 'CS 관리', subLabel }: ServiceCenterPageP
           items: form.items
         })
         showAlert('새로운 지점이 추가되었습니다.', 'success')
-      }
-
-      // Adjust stock in the backend
-      for (const sItem of stockItems) {
-        const savedInBranch = editingServiceCenter?.items?.find((i) => i.name === sItem.name)?.count || 0
-        const countInCurrentForm = form.items
-          .filter((i) => i.name === sItem.name)
-          .reduce((sum, i) => sum + (i.count || 0), 0)
-
-        const diff = savedInBranch - countInCurrentForm
-        if (diff !== 0) {
-          await window.api.item.edit({
-            ...sItem,
-            count: sItem.count + diff
-          })
-        }
       }
 
       await loadServiceCenters()
@@ -379,23 +364,6 @@ function ServiceCenterPage({ title = 'CS 관리', subLabel }: ServiceCenterPageP
 
     try {
       await window.api.serviceCenter.remove(deletingServiceCenter.id)
-      
-      // Return stocks for deleted branch
-      if (deletingServiceCenter.items && deletingServiceCenter.items.length > 0) {
-        let latestStock: StoredItem[] = []
-        if (window.api && window.api.item) {
-          latestStock = await window.api.item.readAll()
-        }
-        for (const item of deletingServiceCenter.items) {
-          const sItem = latestStock.find((s) => s.name === item.name)
-          if (sItem) {
-            await window.api.item.edit({
-              ...sItem,
-              count: sItem.count + (item.count || 0)
-            })
-          }
-        }
-      }
 
       showAlert('지점이 삭제되었습니다.', 'success')
       await loadServiceCenters()

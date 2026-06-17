@@ -1,94 +1,50 @@
 import { ipcMain, dialog, app } from 'electron'
-import ElectronStore from 'electron-store'
 import * as path from 'path'
 import * as fs from 'fs'
 import * as crypto from 'crypto'
 import type { ServiceCenterBranch } from '../../shared/api'
 
-const VALID_STATUSES = ['문의접수', '입고요청', '수리중', '수리완료', '출고대기', '출고완료', '접수취소'] as const
-
-const store = new ElectronStore<{ branches: Record<string, ServiceCenterBranch> }>({
-  name: 'cs',
-  defaults: {
-    branches: {}
-  }
-})
+const API_URL = process.env.API_URL || 'http://localhost'
 
 export function registerServiceCenterHandlers(): void {
-  // If store doesn't have branches, initialize to empty object
-  if (!store.has('branches')) {
-    store.set('branches', {})
-  } else {
-    // Migrate: Ensure all existing branches have a createdAt field, status '접수중' to '문의접수', and contacts are cleaned
-    let currentBranches = store.get('branches')
-    if (currentBranches && typeof currentBranches === 'object') {
-      let modified = false
-      const updated = { ...currentBranches } as Record<string, any>
-      for (const key of Object.keys(updated)) {
-        if (updated[key]) {
-          if (!updated[key].createdAt) {
-            updated[key].createdAt = new Date().toISOString()
-            modified = true
-          }
-          if (updated[key].status === '접수중') {
-            updated[key].status = '문의접수'
-            modified = true
-          }
-          if (updated[key].status === '출고중') {
-            updated[key].status = '출고대기'
-            modified = true
-          }
-          if (updated[key].contact && updated[key].contact.includes('-')) {
-            updated[key].contact = updated[key].contact.replace(/\D/g, '')
-            modified = true
-          }
-        }
-      }
-      if (modified) {
-        store.set('branches', updated)
-      }
-    }
-  }
-
-  ipcMain.handle('service-center:readAll', () => {
-    const branches = store.get('branches') || {}
-    return Object.values(branches)
+  ipcMain.handle('service-center:readAll', async () => {
+    const response = await fetch(`${API_URL}/service-center`)
+    if (!response.ok) throw new Error('Failed to fetch service center branches')
+    return response.json()
   })
 
-  ipcMain.handle('service-center:create', (_, branchInput: Omit<ServiceCenterBranch, 'id' | 'createdAt'>) => {
-    const newId = crypto.randomUUID()
-    const newBranch: ServiceCenterBranch = {
-      ...branchInput,
-      contact: branchInput.contact.replace(/\D/g, ''),
-      id: newId,
-      createdAt: new Date().toISOString()
-    }
-    store.set(`branches.${newId}`, newBranch)
-    return newBranch
+  ipcMain.handle('service-center:create', async (_, branchInput: Omit<ServiceCenterBranch, 'id' | 'createdAt'>) => {
+    const response = await fetch(`${API_URL}/service-center`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(branchInput)
+    })
+    if (!response.ok) throw new Error('Failed to create service center branch')
+    return response.json()
   })
 
-  ipcMain.handle('service-center:edit', (_, branch: ServiceCenterBranch) => {
-    const updatedBranch = {
-      ...branch,
-      contact: branch.contact.replace(/\D/g, '')
-    }
-    store.set(`branches.${branch.id}`, updatedBranch)
-    return updatedBranch
+  ipcMain.handle('service-center:edit', async (_, branch: ServiceCenterBranch) => {
+    const response = await fetch(`${API_URL}/service-center/${branch.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(branch)
+    })
+    if (!response.ok) throw new Error('Failed to edit service center branch')
+    return response.json()
   })
 
-  ipcMain.handle('service-center:remove', (_, id: string) => {
-    const branches = store.get('branches') || {}
-    if (branches[id]) {
-      const updated = { ...branches }
-      delete updated[id]
-      store.set('branches', updated)
-      return true
-    }
-    return false
+  ipcMain.handle('service-center:remove', async (_, id: string) => {
+    const response = await fetch(`${API_URL}/service-center/${id}`, {
+      method: 'DELETE'
+    })
+    if (!response.ok) throw new Error('Failed to remove service center branch')
+    return response.json() // returns boolean
   })
 
-  ipcMain.handle('service-center:getStatuses', () => {
-    return [...VALID_STATUSES]
+  ipcMain.handle('service-center:getStatuses', async () => {
+    const response = await fetch(`${API_URL}/service-center/statuses`)
+    if (!response.ok) throw new Error('Failed to get statuses')
+    return response.json()
   })
 
   ipcMain.handle('service-center:uploadLicense', async () => {

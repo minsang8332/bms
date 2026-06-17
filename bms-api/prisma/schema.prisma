@@ -1,0 +1,48 @@
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Item {
+  id           String        @id @db.VarChar(36)
+  name         String        @unique
+  price        Int
+  count        Int
+  shippedItems ShippedItem[]
+
+  @@map("items")
+}
+
+model ServiceCenter {
+  id           String        @id @db.VarChar(36)
+  name         String
+  address      String
+  contact      String
+  status       String        @default("문의접수") @db.VarChar(20)
+  licensePath  String?       @map("license_path")
+  licenseName  String?       @map("license_name")
+  description  String?       @db.Text
+  shippedAt    DateTime?     @map("shipped_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  items        ShippedItem[]
+
+  @@map("service_centers")
+}
+
+model ShippedItem {
+  id              Int           @id @default(autoincrement())
+  serviceCenterId String        @map("service_center_id") @db.VarChar(36)
+  itemId          String?       @map("item_id") @db.VarChar(36)
+  name            String
+  price           Int
+  count           Int
+
+  serviceCenter   ServiceCenter @relation(fields: [serviceCenterId], references: [id], onDelete: Cascade)
+  item            Item?         @relation(fields: [itemId], references: [id], onDelete: SetNull)
+
+  @@map("shipped_items")
+}

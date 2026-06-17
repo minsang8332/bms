@@ -14,6 +14,11 @@ if [ ! -f "$CERT_DIR/fullchain.pem" ]; then
         -subj "/CN=localhost"
 fi
 
+if [ -n "$DOMAIN" ]; then
+    echo "Configuring Nginx with domain: $DOMAIN"
+    sed -i "s|server_name _;|server_name $DOMAIN;|g" /etc/nginx/nginx.conf
+fi
+
 # Start Nginx in background
 nginx -g "daemon off;" &
 NGINX_PID=$!

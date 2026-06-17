@@ -28,8 +28,10 @@ export default function CsHistoryPage({ title = 'CS 히스토리', subLabel }: C
   const [currentPage, setCurrentPage] = useState(1)
   
   // Date filter states (YYYY-MM-DD)
-  const [startDate, setStartDate] = useState<string>('')
-  const [endDate, setEndDate] = useState<string>('')
+  const [startDate, setStartDate] = useState<string>(
+    dayjs().subtract(1, 'week').day(5).format('YYYY-MM-DD')
+  )
+  const [endDate, setEndDate] = useState<string>(dayjs().format('YYYY-MM-DD'))
 
   const [sortKey, setSortKey] = useState<SortKey>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')

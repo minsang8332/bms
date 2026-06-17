@@ -1,1 +1,4 @@
+bms-db/data
+.env
 .env.db
+.env.api

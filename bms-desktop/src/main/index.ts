@@ -11,6 +11,7 @@ import { registerServiceCenterHandlers } from './handlers/service-center'
 
 import { createAppTray, destroyAppTray } from './modules/tray'
 import { startPolling as startSerialPortPolling, stopPolling as stopSerialPortPolling } from './modules/serial-port'
+import { migrateLocalDataToApi } from './modules/store/migration'
 
 const { autoUpdater } = electronUpdater
 let mainWindow: BrowserWindow | null = null
@@ -80,7 +81,7 @@ app.whenReady().then(() => {
     getMainWindow: () => mainWindow
   })
   registerTabHandlers(storeRepository)
-  registerItemHandlers(storeRepository)
+  registerItemHandlers()
   registerSettingHandlers({ storeRepository })
   registerServiceCenterHandlers()
 
@@ -88,6 +89,7 @@ app.whenReady().then(() => {
 
   createAppTray(window)
   startSerialPortPolling()
+  migrateLocalDataToApi()
 
   if (!is.dev) {
     autoUpdater.checkForUpdatesAndNotify().catch(() => undefined)

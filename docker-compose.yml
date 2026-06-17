@@ -6,9 +6,11 @@ services:
     env_file:
       - .env.db
     volumes:
-      - bms-db-data:/var/lib/mysql
+      - ./bms-db/data:/var/lib/mysql
     networks:
       - bms-network
+    ports:
+      - "127.0.0.1:3306:3306"
     restart: always
 
   bms-api:
@@ -16,7 +18,8 @@ services:
       context: ./bms-api
     container_name: bms-api
     env_file:
-      - .env.db
+      - .env
+      - .env.api
     environment:
       - DB_HOST=bms-db
       - DB_PORT=3306
@@ -30,6 +33,8 @@ services:
     build:
       context: ./bms-proxy
     container_name: bms-proxy
+    env_file:
+      - .env
     ports:
       - "80:80"
       - "443:443"
@@ -44,7 +49,6 @@ services:
     restart: always
 
 volumes:
-  bms-db-data:
   bms-proxy-certs:
   bms-proxy-acme:
   bms-proxy-getssl:

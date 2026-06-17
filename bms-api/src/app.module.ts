@@ -1,18 +1,21 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from '@/prisma/prisma.module';
+import { HealthModule } from '@/modules/health/health.module';
+import { ItemsModule } from '@/modules/items/items.module';
+import { ServiceCenterModule } from '@/modules/service-center/service-center.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DB_HOST || 'bms-db',
-      port: parseInt(process.env.DB_PORT || '3306', 10),
-      username: process.env.MYSQL_USER || 'bms_user',
-      password: process.env.MYSQL_PASSWORD || 'bms_secure_password',
-      database: process.env.MYSQL_DATABASE || 'bms',
-      entities: [],
-      synchronize: true, // Be careful in production, set to false
+    ConfigModule.forRoot({
+      isGlobal: true,
     }),
+    PrismaModule,
+    HealthModule,
+    ItemsModule,
+    ServiceCenterModule,
   ],
 })
 export class AppModule {}
+
+

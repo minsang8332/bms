@@ -1,13 +1,40 @@
 import { ipcMain } from 'electron'
 import type { ItemInput, StoredItem } from '../../shared/api'
-import { createItemRepository } from '../modules/item/item-repository'
-import type { StoreRepository } from '../modules/store/create-store-repository'
 
-export function registerItemHandlers(storeRepository: StoreRepository): void {
-  const itemRepository = createItemRepository(storeRepository)
+const API_URL = process.env.API_URL || 'http://localhost'
 
-  ipcMain.handle('item:readAll', () => itemRepository.readAll())
-  ipcMain.handle('item:create', (_, item: ItemInput) => itemRepository.create(item))
-  ipcMain.handle('item:edit', (_, item: StoredItem) => itemRepository.edit(item))
-  ipcMain.handle('item:remove', (_, id: string) => itemRepository.remove(id))
+export function registerItemHandlers(): void {
+  ipcMain.handle('item:readAll', async () => {
+    const response = await fetch(`${API_URL}/items`)
+    if (!response.ok) throw new Error('Failed to fetch items')
+    return response.json()
+  })
+
+  ipcMain.handle('item:create', async (_, item: ItemInput) => {
+    const response = await fetch(`${API_URL}/items`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    })
+    if (!response.ok) throw new Error('Failed to create item')
+    return response.json()
+  })
+
+  ipcMain.handle('item:edit', async (_, item: StoredItem) => {
+    const response = await fetch(`${API_URL}/items/${item.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(item)
+    })
+    if (!response.ok) throw new Error('Failed to edit item')
+    return response.json()
+  })
+
+  ipcMain.handle('item:remove', async (_, id: string) => {
+    const response = await fetch(`${API_URL}/items/${id}`, {
+      method: 'DELETE'
+    })
+    if (!response.ok) throw new Error('Failed to remove item')
+    return response.json() // returns boolean
+  })
 }
