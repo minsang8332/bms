@@ -23,6 +23,7 @@ services:
     environment:
       - DB_HOST=bms-db
       - DB_PORT=3306
+      - DATABASE_URL=mysql://bms_user:bms_secure_password@bms-db:3306/bms
     depends_on:
       - bms-db
     networks:
